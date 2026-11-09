@@ -1,0 +1,19 @@
+# Binaries
+/future-assessment
+/bin/
+*.exe
+*.test
+
+# Test output
+coverage.out
+*.coverprofile
+
+# Local env
+.env
+.env.*
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store

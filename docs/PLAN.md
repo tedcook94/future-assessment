@@ -50,7 +50,7 @@ Mark each `[x]` when complete.
 
 ### Phase A: core
 
-- [ ] 1. **Scaffold:** `go mod init`, `main.go` with `slog`, `http.Server`, graceful shutdown (SIGINT/SIGTERM), `GET /healthz`, `.gitignore`.
+- [x] 1. **Scaffold:** `go mod init`, `main.go` with `slog`, `http.Server`, graceful shutdown (SIGINT/SIGTERM), `GET /healthz`, `.gitignore`.
 - [ ] 2. **Scheduling rules:** Pure functions: slot alignment, business-hours check, slot generation over a range. Table tests incl. DST transitions, weekends, 5pm edge.
 - [ ] 3. **Postgres store:** Embedded migration, `pgx` pool, store (`ListByTrainer`, `ListInRange`, `Create`), compose file with Postgres only.
 - [ ] 4. **Service:** Availability = generated slots minus booked; booking validates then stores. Tests with a fake store.
