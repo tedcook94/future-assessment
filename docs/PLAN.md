@@ -43,6 +43,9 @@ Appointment scheduling API in Go: clients book 30-minute video calls with traine
 7. **POST `ends_at`:** required; must equal `starts_at + 30m` (422 otherwise).
 8. **IDs:** all UUIDs (stdlib `uuid` package). Appointment IDs default to Postgres 18 `uuidv7()`. Trainers/users are plain IDs, no tables, unknown IDs allowed.
 9. **Seeding:** idempotent (`ON CONFLICT DO NOTHING`); invalid rows logged and skipped.
+10. **Responses:** list endpoints use envelopes (`{"available_times": [...]}`, `{"appointments": [...]}`), never `null`. Errors are `{"error": "..."}`; 500s log the cause and return a generic message.
+11. **Time input:** RFC 3339 only (no date-only). Unencoded `+` offsets in query strings become spaces; README should advise `Z` or URL-encoding.
+12. **Status codes:** 400 malformed input / bad range / missing IDs; 409 overlap; 413 body > 1 MB; 422 slot rule violations and past times.
 
 ## Commits
 
@@ -57,7 +60,7 @@ Mark each `[x]` when complete.
 
 ### Phase B: API and delivery
 
-- [ ] 5. **HTTP handlers:** JSON encode/decode, consistent error shape, 400/409/422 mapping, `httptest` tests.
+- [x] 5. **HTTP handlers:** JSON encode/decode, consistent error shape, 400/409/422 mapping, `httptest` tests.
 - [ ] 6. **Seed:** load `appointments.json` on startup. Blocked until file arrives.
 - [ ] 7. **Docker:** Multi-stage build to distroless, app waits on Postgres healthcheck.
 - [ ] 8. **README:** Run instructions, `curl` examples, assumptions, future work.

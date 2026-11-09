@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"future-assessment/internal/appointment"
 	"future-assessment/internal/httpapi"
 	"future-assessment/internal/store"
 )
@@ -50,7 +51,7 @@ func run(ctx context.Context) error {
 
 	srv := &http.Server{
 		Addr:              net.JoinHostPort("", cfg.port),
-		Handler:           httpapi.NewRouter(logger),
+		Handler:           httpapi.NewRouter(logger, appointment.NewService(db, time.Now)),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,
