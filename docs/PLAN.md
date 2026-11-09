@@ -20,7 +20,7 @@ Appointment scheduling API in Go: clients book 30-minute video calls with traine
 - Service takes an injected `now func() time.Time` for testable clock.
 - `slog` for logging; stdlib `net/http` with Go 1.22+ `ServeMux` patterns.
 - `pgx/v5` with hand-written SQL (no sqlc).
-- Migrations embedded in the binary; run on startup.
+- Single idempotent `schema.sql` embedded in the binary; run on startup (no migration tool for one table).
 - `docker compose up` starts `postgres` and `app`; app migrates, seeds, then serves.
 
 ### Routes
@@ -34,14 +34,14 @@ Appointment scheduling API in Go: clients book 30-minute video calls with traine
 
 ## Decisions
 
-1. **Time storage:** UTC everywhere. `timestamptz` columns, pool session `timezone=UTC`.
+1. **Time storage:** UTC everywhere. `timestamptz` columns; the store normalizes scanned times with `.UTC()` because pgx returns `time.Local` regardless of session time zone.
 2. **API time format:** RFC 3339. Input accepts any offset and is normalized to UTC; output is UTC (`Z`).
 3. **Business rules:** evaluated by converting to `America/Los_Angeles` (DST-aware). Import `time/tzdata` so minimal images work. Last valid slot is 4:30–5:00pm Pacific.
 4. **Overlap prevention:** Postgres exclusion constraint (`btree_gist`, `EXCLUDE USING gist (trainer_id WITH =, tstzrange(starts_at, ends_at) WITH &&)`). Violation maps to 409.
 5. **Past times:** hidden from availability; booking in the past is rejected.
 6. **Availability range:** capped at 30 days (400 if exceeded). Range is half-open `[starts_at, ends_at)`.
 7. **POST `ends_at`:** required; must equal `starts_at + 30m` (422 otherwise).
-8. **Trainers/users:** plain IDs, no tables, unknown IDs allowed.
+8. **IDs:** all UUIDs (stdlib `uuid` package). Appointment IDs default to Postgres 18 `uuidv7()`. Trainers/users are plain IDs, no tables, unknown IDs allowed.
 9. **Seeding:** idempotent (`ON CONFLICT DO NOTHING`); invalid rows logged and skipped.
 
 ## Commits
@@ -52,7 +52,7 @@ Mark each `[x]` when complete.
 
 - [x] 1. **Scaffold:** `go mod init`, `main.go` with `slog`, `http.Server`, graceful shutdown (SIGINT/SIGTERM), `GET /healthz`, `.gitignore`.
 - [x] 2. **Scheduling rules:** Pure functions: slot alignment, business-hours check, slot generation over a range. Table tests incl. DST transitions, weekends, 5pm edge.
-- [ ] 3. **Postgres store:** Embedded migration, `pgx` pool, store (`ListByTrainer`, `ListInRange`, `Create`), compose file with Postgres only.
+- [x] 3. **Postgres store:** Embedded migration, `pgx` pool, store (`ListByTrainer`, `ListInRange`, `Create`), compose file with Postgres only.
 - [ ] 4. **Service:** Availability = generated slots minus booked; booking validates then stores. Tests with a fake store.
 
 ### Phase B: API and delivery

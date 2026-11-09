@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"future-assessment/internal/httpapi"
+	"future-assessment/internal/store"
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -35,6 +36,17 @@ func run(ctx context.Context) error {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.logLevel}))
 	slog.SetDefault(logger)
+
+	db, err := store.New(ctx, cfg.databaseURL)
+	if err != nil {
+		return fmt.Errorf("connect to database: %w", err)
+	}
+	defer db.Close()
+
+	if err := db.Migrate(ctx); err != nil {
+		return err
+	}
+	logger.Info("database ready")
 
 	srv := &http.Server{
 		Addr:              net.JoinHostPort("", cfg.port),
@@ -73,14 +85,20 @@ func run(ctx context.Context) error {
 }
 
 type config struct {
-	port     string
-	logLevel slog.Level
+	port        string
+	logLevel    slog.Level
+	databaseURL string
 }
 
 func loadConfig() (config, error) {
 	cfg := config{
-		port:     envOr("PORT", "8080"),
-		logLevel: slog.LevelInfo,
+		port:        envOr("PORT", "8080"),
+		logLevel:    slog.LevelInfo,
+		databaseURL: os.Getenv("DATABASE_URL"),
+	}
+
+	if cfg.databaseURL == "" {
+		return config{}, errors.New("DATABASE_URL is required")
 	}
 
 	if raw, ok := os.LookupEnv("LOG_LEVEL"); ok {
