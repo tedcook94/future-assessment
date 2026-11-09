@@ -1,4 +1,15 @@
 services:
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgres://scheduler:scheduler@postgres:5432/scheduler?sslmode=disable
+      LOG_LEVEL: info
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:18-alpine
     environment:

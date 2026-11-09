@@ -1,0 +1,13 @@
+.git
+.gitignore
+.dockerignore
+Dockerfile
+compose.yaml
+docs
+*.md
+.env
+.env.*
+coverage.out
+*.coverprofile
+.idea
+.vscode
