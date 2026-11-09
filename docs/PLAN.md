@@ -53,7 +53,7 @@ Mark each `[x]` when complete.
 - [x] 1. **Scaffold:** `go mod init`, `main.go` with `slog`, `http.Server`, graceful shutdown (SIGINT/SIGTERM), `GET /healthz`, `.gitignore`.
 - [x] 2. **Scheduling rules:** Pure functions: slot alignment, business-hours check, slot generation over a range. Table tests incl. DST transitions, weekends, 5pm edge.
 - [x] 3. **Postgres store:** Embedded migration, `pgx` pool, store (`ListByTrainer`, `ListInRange`, `Create`), compose file with Postgres only.
-- [ ] 4. **Service:** Availability = generated slots minus booked; booking validates then stores. Tests with a fake store.
+- [x] 4. **Service:** Availability = generated slots minus booked; booking validates then stores. Tests use the shared in-memory `storetest.Fake` (also used by handler tests in item 5).
 
 ### Phase B: API and delivery
 
