@@ -64,4 +64,4 @@ Mark each `[x]` when complete.
 - [ ] 6. **Seed:** load `appointments.json` on startup and add a seeded-trainer Bruno request. Blocked until file arrives.
 - [x] 7. **Docker:** Multi-stage build to distroless (`static-debian13:nonroot`, ~14 MB), app waits on Postgres healthcheck. No BuildKit cache mounts so legacy builders work. Seed (item 6) will use `go:embed`, so no Docker changes needed.
 - [x] 8. **Bruno collection:** OpenCollection YAML requests with tests for the happy path, errors, and health. Usage in `docs/BRUNO.md`.
-- [ ] 9. **README:** Run instructions, `curl` examples, assumptions, future work.
+- [x] 9. **README:** Run instructions, `curl` examples, assumptions, future work.
