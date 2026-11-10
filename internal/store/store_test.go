@@ -3,18 +3,19 @@ package store_test
 import (
 	"context"
 	"errors"
+	"math"
+	"math/rand/v2"
 	"os"
 	"testing"
 	"time"
-	"uuid"
 
 	"future-assessment/internal/store"
 )
 
 // newTestStore connects to TEST_DATABASE_URL and applies the schema. Tests are
 // skipped when the variable is unset so `go test ./...` works without a
-// database. Each test isolates its data by using freshly generated trainer IDs,
-// so no cleanup between tests is needed.
+// database. Each test isolates its data by using random trainer IDs from
+// newID, so no cleanup between tests is needed.
 func newTestStore(t *testing.T) *store.Store {
 	t.Helper()
 
@@ -44,11 +45,15 @@ func at(s string) time.Time {
 	return t
 }
 
-func appt(trainerID uuid.UUID, start string) store.Appointment {
+func newID() int64 {
+	return rand.Int64N(math.MaxInt64) + 1
+}
+
+func appt(trainerID int64, start string) store.Appointment {
 	startsAt := at(start)
 	return store.Appointment{
 		TrainerID: trainerID,
-		UserID:    uuid.New(),
+		UserID:    newID(),
 		StartsAt:  startsAt,
 		EndsAt:    startsAt.Add(30 * time.Minute),
 	}
@@ -74,14 +79,14 @@ func startTimes(appts []store.Appointment) []time.Time {
 func TestCreateAndListByTrainer(t *testing.T) {
 	s := newTestStore(t)
 	ctx := t.Context()
-	trainer := uuid.New()
+	trainer := newID()
 
 	later := mustCreate(t, ctx, s, appt(trainer, "2026-11-09T19:00:00Z"))
 	// Non-UTC input must come back as the same instant in UTC.
 	earlier := mustCreate(t, ctx, s, appt(trainer, "2026-11-09T08:00:00-08:00"))
-	mustCreate(t, ctx, s, appt(uuid.New(), "2026-11-09T17:00:00Z"))
+	mustCreate(t, ctx, s, appt(newID(), "2026-11-09T17:00:00Z"))
 
-	if earlier.ID == uuid.Nil() || earlier.ID == later.ID {
+	if earlier.ID == 0 || earlier.ID == later.ID {
 		t.Fatalf("IDs not generated: %v, %v", earlier.ID, later.ID)
 	}
 
@@ -106,7 +111,7 @@ func TestCreateAndListByTrainer(t *testing.T) {
 func TestCreateRejectsOverlap(t *testing.T) {
 	s := newTestStore(t)
 	ctx := t.Context()
-	trainer := uuid.New()
+	trainer := newID()
 
 	mustCreate(t, ctx, s, appt(trainer, "2026-11-09T17:00:00Z"))
 
@@ -130,7 +135,7 @@ func TestCreateRejectsOverlap(t *testing.T) {
 func TestCreateAllowsAdjacentSlots(t *testing.T) {
 	s := newTestStore(t)
 	ctx := t.Context()
-	trainer := uuid.New()
+	trainer := newID()
 
 	mustCreate(t, ctx, s, appt(trainer, "2026-11-09T17:00:00Z"))
 	mustCreate(t, ctx, s, appt(trainer, "2026-11-09T17:30:00Z"))
@@ -141,14 +146,14 @@ func TestCreateAllowsSameSlotForDifferentTrainers(t *testing.T) {
 	s := newTestStore(t)
 	ctx := t.Context()
 
-	mustCreate(t, ctx, s, appt(uuid.New(), "2026-11-09T17:00:00Z"))
-	mustCreate(t, ctx, s, appt(uuid.New(), "2026-11-09T17:00:00Z"))
+	mustCreate(t, ctx, s, appt(newID(), "2026-11-09T17:00:00Z"))
+	mustCreate(t, ctx, s, appt(newID(), "2026-11-09T17:00:00Z"))
 }
 
 func TestListInRange(t *testing.T) {
 	s := newTestStore(t)
 	ctx := t.Context()
-	trainer := uuid.New()
+	trainer := newID()
 
 	for _, start := range []string{
 		"2026-11-09T16:00:00Z", // ends at range start: excluded
@@ -158,7 +163,7 @@ func TestListInRange(t *testing.T) {
 	} {
 		mustCreate(t, ctx, s, appt(trainer, start))
 	}
-	mustCreate(t, ctx, s, appt(uuid.New(), "2026-11-09T17:00:00Z"))
+	mustCreate(t, ctx, s, appt(newID(), "2026-11-09T17:00:00Z"))
 
 	got, err := s.ListInRange(ctx, trainer, at("2026-11-09T16:30:00Z"), at("2026-11-09T18:00:00Z"))
 	if err != nil {
@@ -180,11 +185,11 @@ func TestListInRange(t *testing.T) {
 func TestListInRangeIncludesStraddlingAppointment(t *testing.T) {
 	s := newTestStore(t)
 	ctx := t.Context()
-	trainer := uuid.New()
+	trainer := newID()
 
 	mustCreate(t, ctx, s, store.Appointment{
 		TrainerID: trainer,
-		UserID:    uuid.New(),
+		UserID:    newID(),
 		StartsAt:  at("2026-11-09T16:15:00Z"),
 		EndsAt:    at("2026-11-09T16:45:00Z"),
 	})

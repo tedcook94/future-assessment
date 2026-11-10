@@ -28,8 +28,13 @@ request:
             saturday.setUTCDate(saturday.getUTCDate() + 1);
           } while (saturday.getUTCDay() !== 6);
 
-          bru.setVar("trainerId", bru.interpolate("{{$randomUUID}}"));
-          bru.setVar("userId", bru.interpolate("{{$randomUUID}}"));
+          // Starting above 1,000 keeps clear of the seeded trainers and users.
+          const randomId = () => 1000 + Math.floor(Math.random() * 1e9);
+          const userId = randomId();
+
+          bru.setVar("trainerId", randomId());
+          bru.setVar("userId", userId);
+          bru.setVar("otherUserId", userId + 1);
           bru.setVar("slotStart", iso(slot));
           bru.setVar("slotEnd", iso(new Date(slot.getTime() + minutes(30))));
           bru.setVar("windowStart", iso(new Date(slot.getTime() - minutes(30))));

@@ -5,7 +5,6 @@ import (
 	"slices"
 	"sync"
 	"time"
-	"uuid"
 
 	"future-assessment/internal/store"
 )
@@ -16,15 +15,16 @@ type Fake struct {
 	// Err, if set, is returned by every store method.
 	Err error
 
-	mu    sync.Mutex
-	appts []store.Appointment
+	mu     sync.Mutex
+	appts  []store.Appointment
+	lastID int64
 }
 
-func (f *Fake) ListByTrainer(_ context.Context, trainerID uuid.UUID) ([]store.Appointment, error) {
+func (f *Fake) ListByTrainer(_ context.Context, trainerID int64) ([]store.Appointment, error) {
 	return f.filter(func(a store.Appointment) bool { return a.TrainerID == trainerID })
 }
 
-func (f *Fake) ListInRange(_ context.Context, trainerID uuid.UUID, from, to time.Time) ([]store.Appointment, error) {
+func (f *Fake) ListInRange(_ context.Context, trainerID int64, from, to time.Time) ([]store.Appointment, error) {
 	return f.filter(func(a store.Appointment) bool {
 		return a.TrainerID == trainerID && a.StartsAt.Before(to) && a.EndsAt.After(from)
 	})
@@ -43,21 +43,22 @@ func (f *Fake) Create(_ context.Context, a store.Appointment) (store.Appointment
 		}
 	}
 
-	a.ID = uuid.NewV7()
+	a.ID = f.nextID()
 	f.appts = append(f.appts, a)
 	return a, nil
 }
 
 // Seed inserts an appointment directly, skipping the overlap check, the way
 // legacy data might arrive. Use it to arrange test state.
-func (f *Fake) Seed(trainerID uuid.UUID, start, end time.Time) store.Appointment {
+func (f *Fake) Seed(trainerID int64, start, end time.Time) store.Appointment {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
+	id := f.nextID()
 	a := store.Appointment{
-		ID:        uuid.NewV7(),
+		ID:        id,
 		TrainerID: trainerID,
-		UserID:    uuid.New(),
+		UserID:    id,
 		StartsAt:  start.UTC(),
 		EndsAt:    end.UTC(),
 	}
@@ -69,6 +70,12 @@ func (f *Fake) All() []store.Appointment {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return slices.Clone(f.appts)
+}
+
+// nextID must be called with f.mu held.
+func (f *Fake) nextID() int64 {
+	f.lastID++
+	return f.lastID
 }
 
 func (f *Fake) filter(keep func(store.Appointment) bool) ([]store.Appointment, error) {

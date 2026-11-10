@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"slices"
 	"time"
-	"uuid"
 
 	"future-assessment/internal/scheduling"
 	"future-assessment/internal/store"
@@ -18,18 +17,18 @@ var (
 	ErrInvalidRange = errors.New("starts_at must be before ends_at")
 	ErrRangeTooLong = errors.New("range must not exceed 30 days")
 	ErrInPast       = errors.New("appointment must start in the future")
-	ErrInvalidID    = errors.New("trainer_id and user_id are required")
+	ErrInvalidID    = errors.New("trainer_id and user_id must be positive integers")
 )
 
 type Store interface {
-	ListByTrainer(ctx context.Context, trainerID uuid.UUID) ([]store.Appointment, error)
-	ListInRange(ctx context.Context, trainerID uuid.UUID, from, to time.Time) ([]store.Appointment, error)
+	ListByTrainer(ctx context.Context, trainerID int64) ([]store.Appointment, error)
+	ListInRange(ctx context.Context, trainerID int64, from, to time.Time) ([]store.Appointment, error)
 	Create(ctx context.Context, a store.Appointment) (store.Appointment, error)
 }
 
 type NewAppointment struct {
-	TrainerID uuid.UUID
-	UserID    uuid.UUID
+	TrainerID int64
+	UserID    int64
 	StartsAt  time.Time
 	EndsAt    time.Time
 }
@@ -45,7 +44,7 @@ func NewService(s Store, now func() time.Time) *Service {
 
 // Availability returns the trainer's open slots within [from, to), excluding
 // slots that have already started. The range may not exceed MaxRange.
-func (s *Service) Availability(ctx context.Context, trainerID uuid.UUID, from, to time.Time) ([]scheduling.Slot, error) {
+func (s *Service) Availability(ctx context.Context, trainerID int64, from, to time.Time) ([]scheduling.Slot, error) {
 	if !from.Before(to) {
 		return nil, ErrInvalidRange
 	}
@@ -85,7 +84,7 @@ func subtractBooked(slots []scheduling.Slot, booked []store.Appointment) []sched
 // Book validates and stores a new appointment. It returns store.ErrOverlap if
 // the trainer is already booked at that time.
 func (s *Service) Book(ctx context.Context, req NewAppointment) (store.Appointment, error) {
-	if req.TrainerID == uuid.Nil() || req.UserID == uuid.Nil() {
+	if req.TrainerID <= 0 || req.UserID <= 0 {
 		return store.Appointment{}, ErrInvalidID
 	}
 	if err := scheduling.ValidateSlot(req.StartsAt, req.EndsAt); err != nil {
@@ -105,7 +104,7 @@ func (s *Service) Book(ctx context.Context, req NewAppointment) (store.Appointme
 
 // ListAppointments returns all of a trainer's appointments, ordered by start
 // time.
-func (s *Service) ListAppointments(ctx context.Context, trainerID uuid.UUID) ([]store.Appointment, error) {
+func (s *Service) ListAppointments(ctx context.Context, trainerID int64) ([]store.Appointment, error) {
 	appts, err := s.store.ListByTrainer(ctx, trainerID)
 	if err != nil {
 		return nil, fmt.Errorf("list appointments: %w", err)

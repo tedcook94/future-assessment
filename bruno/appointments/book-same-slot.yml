@@ -10,8 +10,8 @@ http:
     type: json
     data: |-
       {
-        "trainer_id": "{{trainerId}}",
-        "user_id": "{{$randomUUID}}",
+        "trainer_id": {{trainerId}},
+        "user_id": {{otherUserId}},
         "starts_at": "{{slotStart}}",
         "ends_at": "{{slotEnd}}"
       }

@@ -3,8 +3,8 @@ package httpapi
 import (
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
-	"uuid"
 
 	"future-assessment/internal/appointment"
 	"future-assessment/internal/store"
@@ -25,9 +25,9 @@ type availabilityResponse struct {
 }
 
 type appointmentResponse struct {
-	ID        uuid.UUID `json:"id"`
-	TrainerID uuid.UUID `json:"trainer_id"`
-	UserID    uuid.UUID `json:"user_id"`
+	ID        int64     `json:"id"`
+	TrainerID int64     `json:"trainer_id"`
+	UserID    int64     `json:"user_id"`
 	StartsAt  time.Time `json:"starts_at"`
 	EndsAt    time.Time `json:"ends_at"`
 }
@@ -37,8 +37,8 @@ type appointmentsResponse struct {
 }
 
 type createAppointmentRequest struct {
-	TrainerID uuid.UUID `json:"trainer_id"`
-	UserID    uuid.UUID `json:"user_id"`
+	TrainerID int64     `json:"trainer_id"`
+	UserID    int64     `json:"user_id"`
 	StartsAt  time.Time `json:"starts_at"`
 	EndsAt    time.Time `json:"ends_at"`
 }
@@ -125,11 +125,11 @@ func toAppointmentResponse(a store.Appointment) appointmentResponse {
 	}
 }
 
-func pathTrainerID(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
-	id, err := uuid.Parse(r.PathValue("trainer_id"))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "trainer_id must be a valid UUID")
-		return uuid.UUID{}, false
+func pathTrainerID(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	id, err := strconv.ParseInt(r.PathValue("trainer_id"), 10, 64)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, "trainer_id must be a positive integer")
+		return 0, false
 	}
 	return id, true
 }

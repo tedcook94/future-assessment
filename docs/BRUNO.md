@@ -22,7 +22,7 @@ The `bruno/` directory is a [Bruno](https://www.usebruno.com/) collection for ex
 | Appointments / Book same slot | 409 | A second booking of the same slot is rejected |
 | Appointments / Get availability | 200 | The booked slot is missing from the surrounding hour |
 | Appointments / List appointments | 200 | The trainer's booking is listed |
-| Errors / Invalid trainer id | 400 | Path IDs must be UUIDs |
+| Errors / Invalid trainer id | 400 | Path IDs must be positive integers |
 | Errors / Weekend slot | 422 | Bookings must be Monday–Friday |
 | Errors / Range over 30 days | 400 | Availability ranges are capped at 30 days |
 | Health | 200 | The server is up |
@@ -44,7 +44,8 @@ A collection script generates the test data as runtime variables, so no IDs or t
 
 | Variable | Value |
 | --- | --- |
-| `trainerId`, `userId` | Random UUIDs |
+| `trainerId`, `userId` | Random integers above 1,000, clear of the seeded IDs |
+| `otherUserId` | `userId` plus 1, used by **Book same slot** to show the conflict is per trainer |
 | `slotStart`, `slotEnd` | The next weekday, 17:00–17:30 UTC (9am PDT or 10am PST, so always within business hours) |
 | `windowStart`, `windowEnd` | 30 minutes before to 60 minutes after the slot, used by **Get availability** |
 | `weekendStart`, `weekendEnd` | The following Saturday at the same time, used by **Weekend slot** |

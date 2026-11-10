@@ -10,8 +10,8 @@ http:
     type: json
     data: |-
       {
-        "trainer_id": "{{trainerId}}",
-        "user_id": "{{userId}}",
+        "trainer_id": {{trainerId}},
+        "user_id": {{userId}},
         "starts_at": "{{slotStart}}",
         "ends_at": "{{slotEnd}}"
       }
@@ -28,7 +28,7 @@ runtime:
       code: |-
         test("creates the appointment", function () {
           expect(res.status).to.equal(201);
-          expect(res.body.id).to.be.a("string");
+          expect(res.body.id).to.be.a("number");
           expect(res.body.trainer_id).to.equal(bru.getVar("trainerId"));
           expect(res.body.user_id).to.equal(bru.getVar("userId"));
           expect(res.body.starts_at).to.equal(bru.getVar("slotStart"));

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"time"
-	"uuid"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -21,9 +20,9 @@ const exclusionViolation = "23P01"
 var ErrOverlap = errors.New("appointment overlaps an existing appointment")
 
 type Appointment struct {
-	ID        uuid.UUID
-	TrainerID uuid.UUID
-	UserID    uuid.UUID
+	ID        int64
+	TrainerID int64
+	UserID    int64
 	StartsAt  time.Time
 	EndsAt    time.Time
 }
@@ -57,7 +56,7 @@ func (s *Store) Migrate(ctx context.Context) error {
 }
 
 // ListByTrainer returns all appointments for a trainer, ordered by start time.
-func (s *Store) ListByTrainer(ctx context.Context, trainerID uuid.UUID) ([]Appointment, error) {
+func (s *Store) ListByTrainer(ctx context.Context, trainerID int64) ([]Appointment, error) {
 	const q = `
 		SELECT id, trainer_id, user_id, starts_at, ends_at
 		FROM appointments
@@ -69,7 +68,7 @@ func (s *Store) ListByTrainer(ctx context.Context, trainerID uuid.UUID) ([]Appoi
 
 // ListInRange returns a trainer's appointments that overlap [from, to),
 // ordered by start time.
-func (s *Store) ListInRange(ctx context.Context, trainerID uuid.UUID, from, to time.Time) ([]Appointment, error) {
+func (s *Store) ListInRange(ctx context.Context, trainerID int64, from, to time.Time) ([]Appointment, error) {
 	const q = `
 		SELECT id, trainer_id, user_id, starts_at, ends_at
 		FROM appointments

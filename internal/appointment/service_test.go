@@ -5,7 +5,6 @@ import (
 	"slices"
 	"testing"
 	"time"
-	"uuid"
 
 	"future-assessment/internal/appointment"
 	"future-assessment/internal/scheduling"
@@ -29,6 +28,13 @@ func pt(month time.Month, day, hour, minute int) time.Time {
 var now = pt(time.November, 9, 10, 10)
 
 var errBoom = errors.New("boom")
+
+const (
+	trainerID      int64 = 1
+	userID         int64 = 2
+	otherTrainerID int64 = 3
+	otherUserID    int64 = 4
+)
 
 var (
 	_ appointment.Store = (*store.Store)(nil)
@@ -67,7 +73,7 @@ func TestAvailabilityRangeValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := newService(&storetest.Fake{}).Availability(t.Context(), uuid.New(), from, tt.to)
+			_, err := newService(&storetest.Fake{}).Availability(t.Context(), trainerID, from, tt.to)
 			if !errors.Is(err, tt.want) {
 				t.Errorf("err = %v, want %v", err, tt.want)
 			}
@@ -76,13 +82,12 @@ func TestAvailabilityRangeValidation(t *testing.T) {
 }
 
 func TestAvailabilityExcludesBookedSlots(t *testing.T) {
-	trainer := uuid.New()
 	fs := &storetest.Fake{}
-	fs.Seed(trainer, pt(time.November, 10, 9, 0), pt(time.November, 10, 9, 30))
-	fs.Seed(trainer, pt(time.November, 10, 9, 30), pt(time.November, 10, 10, 0))
-	fs.Seed(uuid.New(), pt(time.November, 10, 11, 0), pt(time.November, 10, 11, 30))
+	fs.Seed(trainerID, pt(time.November, 10, 9, 0), pt(time.November, 10, 9, 30))
+	fs.Seed(trainerID, pt(time.November, 10, 9, 30), pt(time.November, 10, 10, 0))
+	fs.Seed(otherTrainerID, pt(time.November, 10, 11, 0), pt(time.November, 10, 11, 30))
 
-	slots, err := newService(fs).Availability(t.Context(), trainer, pt(time.November, 10, 0, 0), pt(time.November, 11, 0, 0))
+	slots, err := newService(fs).Availability(t.Context(), trainerID, pt(time.November, 10, 0, 0), pt(time.November, 11, 0, 0))
 	if err != nil {
 		t.Fatalf("Availability: %v", err)
 	}
@@ -103,11 +108,10 @@ func TestAvailabilityExcludesBookedSlots(t *testing.T) {
 }
 
 func TestAvailabilityExcludesSlotsTouchedByOffGridBooking(t *testing.T) {
-	trainer := uuid.New()
 	fs := &storetest.Fake{}
-	fs.Seed(trainer, pt(time.November, 10, 10, 15), pt(time.November, 10, 10, 45))
+	fs.Seed(trainerID, pt(time.November, 10, 10, 15), pt(time.November, 10, 10, 45))
 
-	slots, err := newService(fs).Availability(t.Context(), trainer, pt(time.November, 10, 0, 0), pt(time.November, 11, 0, 0))
+	slots, err := newService(fs).Availability(t.Context(), trainerID, pt(time.November, 10, 0, 0), pt(time.November, 11, 0, 0))
 	if err != nil {
 		t.Fatalf("Availability: %v", err)
 	}
@@ -123,7 +127,7 @@ func TestAvailabilityExcludesSlotsTouchedByOffGridBooking(t *testing.T) {
 }
 
 func TestAvailabilityHidesPastAndInProgressSlots(t *testing.T) {
-	slots, err := newService(&storetest.Fake{}).Availability(t.Context(), uuid.New(), pt(time.November, 9, 0, 0), pt(time.November, 10, 0, 0))
+	slots, err := newService(&storetest.Fake{}).Availability(t.Context(), trainerID, pt(time.November, 9, 0, 0), pt(time.November, 10, 0, 0))
 	if err != nil {
 		t.Fatalf("Availability: %v", err)
 	}
@@ -138,7 +142,7 @@ func TestAvailabilityHidesPastAndInProgressSlots(t *testing.T) {
 }
 
 func TestAvailabilityEntirelyInPast(t *testing.T) {
-	slots, err := newService(&storetest.Fake{}).Availability(t.Context(), uuid.New(), pt(time.November, 2, 0, 0), pt(time.November, 3, 0, 0))
+	slots, err := newService(&storetest.Fake{}).Availability(t.Context(), trainerID, pt(time.November, 2, 0, 0), pt(time.November, 3, 0, 0))
 	if err != nil {
 		t.Fatalf("Availability: %v", err)
 	}
@@ -148,7 +152,7 @@ func TestAvailabilityEntirelyInPast(t *testing.T) {
 }
 
 func TestAvailabilityStoreError(t *testing.T) {
-	_, err := newService(&storetest.Fake{Err: errBoom}).Availability(t.Context(), uuid.New(), pt(time.November, 10, 0, 0), pt(time.November, 11, 0, 0))
+	_, err := newService(&storetest.Fake{Err: errBoom}).Availability(t.Context(), trainerID, pt(time.November, 10, 0, 0), pt(time.November, 11, 0, 0))
 	if !errors.Is(err, errBoom) {
 		t.Errorf("err = %v, want %v", err, errBoom)
 	}
@@ -156,8 +160,8 @@ func TestAvailabilityStoreError(t *testing.T) {
 
 func TestBookValidation(t *testing.T) {
 	valid := appointment.NewAppointment{
-		TrainerID: uuid.New(),
-		UserID:    uuid.New(),
+		TrainerID: trainerID,
+		UserID:    userID,
 		StartsAt:  pt(time.November, 10, 10, 0),
 		EndsAt:    pt(time.November, 10, 10, 30),
 	}
@@ -167,8 +171,9 @@ func TestBookValidation(t *testing.T) {
 		modify func(*appointment.NewAppointment)
 		want   error
 	}{
-		{"nil trainer", func(r *appointment.NewAppointment) { r.TrainerID = uuid.Nil() }, appointment.ErrInvalidID},
-		{"nil user", func(r *appointment.NewAppointment) { r.UserID = uuid.Nil() }, appointment.ErrInvalidID},
+		{"zero trainer", func(r *appointment.NewAppointment) { r.TrainerID = 0 }, appointment.ErrInvalidID},
+		{"negative trainer", func(r *appointment.NewAppointment) { r.TrainerID = -1 }, appointment.ErrInvalidID},
+		{"zero user", func(r *appointment.NewAppointment) { r.UserID = 0 }, appointment.ErrInvalidID},
 		{"wrong duration", func(r *appointment.NewAppointment) { r.EndsAt = pt(time.November, 10, 11, 0) }, scheduling.ErrInvalidDuration},
 		{"misaligned", func(r *appointment.NewAppointment) {
 			r.StartsAt, r.EndsAt = pt(time.November, 10, 10, 15), pt(time.November, 10, 10, 45)
@@ -208,8 +213,8 @@ func TestBookStoresInUTC(t *testing.T) {
 		t.Fatal(err)
 	}
 	req := appointment.NewAppointment{
-		TrainerID: uuid.New(),
-		UserID:    uuid.New(),
+		TrainerID: trainerID,
+		UserID:    userID,
 		StartsAt:  start,
 		EndsAt:    start.Add(scheduling.SlotDuration),
 	}
@@ -219,7 +224,7 @@ func TestBookStoresInUTC(t *testing.T) {
 		t.Fatalf("Book: %v", err)
 	}
 
-	if got.ID == uuid.Nil() {
+	if got.ID == 0 {
 		t.Error("ID not set")
 	}
 	if got.TrainerID != req.TrainerID || got.UserID != req.UserID {
@@ -239,8 +244,8 @@ func TestBookStoresInUTC(t *testing.T) {
 func TestBookOverlap(t *testing.T) {
 	svc := newService(&storetest.Fake{})
 	req := appointment.NewAppointment{
-		TrainerID: uuid.New(),
-		UserID:    uuid.New(),
+		TrainerID: trainerID,
+		UserID:    userID,
 		StartsAt:  pt(time.November, 10, 10, 0),
 		EndsAt:    pt(time.November, 10, 10, 30),
 	}
@@ -248,20 +253,19 @@ func TestBookOverlap(t *testing.T) {
 	if _, err := svc.Book(t.Context(), req); err != nil {
 		t.Fatalf("first Book: %v", err)
 	}
-	req.UserID = uuid.New()
+	req.UserID = otherUserID
 	if _, err := svc.Book(t.Context(), req); !errors.Is(err, store.ErrOverlap) {
 		t.Errorf("err = %v, want store.ErrOverlap", err)
 	}
 }
 
 func TestListAppointments(t *testing.T) {
-	trainer := uuid.New()
 	fs := &storetest.Fake{}
-	fs.Seed(trainer, pt(time.November, 10, 11, 0), pt(time.November, 10, 11, 30))
-	fs.Seed(trainer, pt(time.November, 3, 9, 0), pt(time.November, 3, 9, 30))
-	fs.Seed(uuid.New(), pt(time.November, 10, 9, 0), pt(time.November, 10, 9, 30))
+	fs.Seed(trainerID, pt(time.November, 10, 11, 0), pt(time.November, 10, 11, 30))
+	fs.Seed(trainerID, pt(time.November, 3, 9, 0), pt(time.November, 3, 9, 30))
+	fs.Seed(otherTrainerID, pt(time.November, 10, 9, 0), pt(time.November, 10, 9, 30))
 
-	got, err := newService(fs).ListAppointments(t.Context(), trainer)
+	got, err := newService(fs).ListAppointments(t.Context(), trainerID)
 	if err != nil {
 		t.Fatalf("ListAppointments: %v", err)
 	}
@@ -278,7 +282,7 @@ func TestListAppointments(t *testing.T) {
 }
 
 func TestListAppointmentsStoreError(t *testing.T) {
-	_, err := newService(&storetest.Fake{Err: errBoom}).ListAppointments(t.Context(), uuid.New())
+	_, err := newService(&storetest.Fake{Err: errBoom}).ListAppointments(t.Context(), trainerID)
 	if !errors.Is(err, errBoom) {
 		t.Errorf("err = %v, want %v", err, errBoom)
 	}
