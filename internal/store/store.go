@@ -96,6 +96,47 @@ func (s *Store) Create(ctx context.Context, a Appointment) (Appointment, error) 
 	return created, nil
 }
 
+// Import inserts appointments with their existing IDs and returns how many
+// were inserted. Rows whose ID already exists or that overlap another of the
+// trainer's appointments are skipped, so importing the same data twice is safe.
+func (s *Store) Import(ctx context.Context, appts []Appointment) (int, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("begin import: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Without a conflict target, DO NOTHING also covers the exclusion
+	// constraint, not just the primary key.
+	const insert = `
+		INSERT INTO appointments (id, trainer_id, user_id, starts_at, ends_at)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT DO NOTHING`
+
+	inserted := 0
+	for _, a := range appts {
+		tag, err := tx.Exec(ctx, insert, a.ID, a.TrainerID, a.UserID, a.StartsAt, a.EndsAt)
+		if err != nil {
+			return 0, fmt.Errorf("import appointment %d: %w", a.ID, err)
+		}
+		inserted += int(tag.RowsAffected())
+	}
+
+	// Explicit IDs bypass the identity sequence, so move it past them or the
+	// next Create would collide. On an empty table the next ID stays 1.
+	const syncSequence = `
+		SELECT setval(pg_get_serial_sequence('appointments', 'id'), GREATEST(MAX(id), 1), MAX(id) IS NOT NULL)
+		FROM appointments`
+
+	if _, err := tx.Exec(ctx, syncSequence); err != nil {
+		return 0, fmt.Errorf("sync id sequence: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return 0, fmt.Errorf("commit import: %w", err)
+	}
+	return inserted, nil
+}
+
 func (s *Store) query(ctx context.Context, q string, args ...any) ([]Appointment, error) {
 	rows, err := s.pool.Query(ctx, q, args...)
 	if err != nil {

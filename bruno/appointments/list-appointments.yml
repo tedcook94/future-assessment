@@ -9,6 +9,9 @@ http:
   auth: inherit
 
 runtime:
+  variables:
+    - name: trainerId
+      value: "1"
   scripts:
     - type: tests
       code: |-
@@ -23,3 +26,7 @@ runtime:
 
 settings:
   encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

@@ -14,6 +14,7 @@ import (
 
 	"future-assessment/internal/appointment"
 	"future-assessment/internal/httpapi"
+	"future-assessment/internal/seed"
 	"future-assessment/internal/store"
 )
 
@@ -48,6 +49,12 @@ func run(ctx context.Context) error {
 		return err
 	}
 	logger.Info("database ready")
+
+	if cfg.seedFile != "" {
+		if err := seed.Run(ctx, db, cfg.seedFile, logger); err != nil {
+			return fmt.Errorf("seed: %w", err)
+		}
+	}
 
 	srv := &http.Server{
 		Addr:              net.JoinHostPort("", cfg.port),
@@ -89,6 +96,7 @@ type config struct {
 	port        string
 	logLevel    slog.Level
 	databaseURL string
+	seedFile    string
 }
 
 func loadConfig() (config, error) {
@@ -96,6 +104,7 @@ func loadConfig() (config, error) {
 		port:        envOr("PORT", "8080"),
 		logLevel:    slog.LevelInfo,
 		databaseURL: os.Getenv("DATABASE_URL"),
+		seedFile:    os.Getenv("SEED_FILE"),
 	}
 
 	if cfg.databaseURL == "" {

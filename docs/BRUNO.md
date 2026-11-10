@@ -22,6 +22,7 @@ The `bruno/` directory is a [Bruno](https://www.usebruno.com/) collection for ex
 | Appointments / Book same slot | 409 | A second booking of the same slot is rejected |
 | Appointments / Get availability | 200 | The booked slot is missing from the surrounding hour |
 | Appointments / List appointments | 200 | The trainer's booking is listed |
+| Appointments / Seeded trainer | 200 | Trainer 1's five appointments from `appointments.json` |
 | Errors / Invalid trainer id | 400 | Path IDs must be positive integers |
 | Errors / Weekend slot | 422 | Bookings must be Monday–Friday |
 | Errors / Range over 30 days | 400 | Availability ranges are capped at 30 days |

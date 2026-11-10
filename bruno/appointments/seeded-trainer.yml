@@ -1,0 +1,28 @@
+info:
+  name: Seeded trainer
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{baseUrl}}/trainers/1/appointments"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("lists the seeded appointments", function () {
+          expect(res.status).to.equal(200);
+
+          const appts = res.body.appointments;
+          expect(appts.map((a) => a.id)).to.deep.equal([1, 2, 3, 4, 5]);
+          expect(appts[0].starts_at).to.equal("2019-01-24T17:00:00Z");
+        });
+
+docs: |-
+  Trainer 1's appointments from `appointments.json`, loaded at startup. Times
+  in the file are `-08:00`, so 09:00 Pacific comes back as 17:00Z.
+
+settings:
+  encodeUrl: true

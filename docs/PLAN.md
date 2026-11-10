@@ -61,8 +61,8 @@ Mark each `[x]` when complete.
 ### Phase B: API and delivery
 
 - [x] 5. **HTTP handlers:** JSON encode/decode, consistent error shape, 400/409/422 mapping, `httptest` tests.
-- [ ] 6. **Seed:** optional `SEED_FILE` (compose bind-mounts `appointments.json`), `store.Import` with explicit IDs and `setval`, seeded-trainer Bruno request, README tradeoff. Do after item 10.
-- [x] 7. **Docker:** Multi-stage build to distroless (`static-debian13:nonroot`, ~14 MB), app waits on Postgres healthcheck. No BuildKit cache mounts so legacy builders work.
-- [x] 8. **Bruno collection:** OpenCollection YAML requests with tests for the happy path, errors, and health. Usage in `docs/BRUNO.md`.
-- [x] 9. **README:** Run instructions, `curl` examples, assumptions, future work.
-- [x] 10. **Integer IDs:** switch every ID from UUID to `int64` across schema, store, service, handlers, tests, Bruno, and docs.
+- [x] 6. **Docker:** Multi-stage build to distroless (`static-debian13:nonroot`, ~14 MB), app waits on Postgres healthcheck. No BuildKit cache mounts so legacy builders work.
+- [x] 7. **Bruno collection:** OpenCollection YAML requests with tests for the happy path, errors, and health. Usage in `docs/BRUNO.md`.
+- [x] 8. **README:** Run instructions, `curl` examples, assumptions, future work.
+- [x] 9. **Integer IDs:** switch every ID from UUID to `int64` across schema, store, service, handlers, tests, Bruno, and docs.
+- [x] 10. **Seed:** import `appointments.json` on startup via `SEED_FILE`; rule violations are logged, not skipped.

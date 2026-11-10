@@ -202,3 +202,50 @@ func TestListInRangeIncludesStraddlingAppointment(t *testing.T) {
 		t.Fatalf("len = %d, want 1", len(got))
 	}
 }
+
+func TestImport(t *testing.T) {
+	s := newTestStore(t)
+	ctx := t.Context()
+	trainer, otherTrainer := newID(), newID()
+
+	// Import takes explicit IDs, so build them from the newest generated ID to
+	// avoid colliding with rows from other tests.
+	last := mustCreate(t, ctx, s, appt(trainer, "2026-11-09T16:00:00Z")).ID
+
+	first := appt(trainer, "2026-11-10T01:00:00Z")
+	first.ID = last + 1
+	overlapping := appt(trainer, "2026-11-10T01:15:00Z")
+	overlapping.ID = last + 2
+	duplicateID := appt(otherTrainer, "2026-11-09T17:00:00Z")
+	duplicateID.ID = last
+	rows := []store.Appointment{first, overlapping, duplicateID}
+
+	inserted, err := s.Import(ctx, rows)
+	if err != nil {
+		t.Fatalf("Import: %v", err)
+	}
+	if inserted != 1 {
+		t.Errorf("inserted = %d, want 1", inserted)
+	}
+
+	inserted, err = s.Import(ctx, rows)
+	if err != nil {
+		t.Fatalf("second Import: %v", err)
+	}
+	if inserted != 0 {
+		t.Errorf("second import inserted = %d, want 0", inserted)
+	}
+
+	got, err := s.ListByTrainer(ctx, trainer)
+	if err != nil {
+		t.Fatalf("ListByTrainer: %v", err)
+	}
+	if len(got) != 2 || got[1] != first {
+		t.Errorf("got %+v, want second row %+v", got, first)
+	}
+
+	next := mustCreate(t, ctx, s, appt(otherTrainer, "2026-11-10T17:00:00Z"))
+	if next.ID != first.ID+1 {
+		t.Errorf("next ID = %d, want %d", next.ID, first.ID+1)
+	}
+}

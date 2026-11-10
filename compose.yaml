@@ -4,6 +4,9 @@ services:
     environment:
       DATABASE_URL: postgres://scheduler:scheduler@postgres:5432/scheduler?sslmode=disable
       LOG_LEVEL: info
+      SEED_FILE: /seed/appointments.json
+    volumes:
+      - ./appointments.json:/seed/appointments.json:ro
     ports:
       - "${APP_PORT:-8080}:8080"
     depends_on:
