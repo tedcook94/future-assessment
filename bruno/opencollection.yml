@@ -1,0 +1,69 @@
+opencollection: "1.0.0"
+info:
+  name: Appointment Scheduling API
+
+request:
+  scripts:
+    - type: before-request
+      code: |-
+        // Generate a fresh trainer, user, and bookable slot on first use and on
+        // every "Book appointment" send, so each booking starts a new scenario.
+        // Matching on the display name means renaming that request disables
+        // the reset.
+        if (!bru.getVar("trainerId") || req.getName() === "Book appointment") {
+          const iso = (d) => d.toISOString().replace(".000Z", "Z");
+          const minutes = (n) => n * 60 * 1000;
+
+          // 17:00Z is 9am PDT or 10am PST: inside business hours year-round and
+          // on the same calendar date in Pacific.
+          const slot = new Date();
+          slot.setUTCDate(slot.getUTCDate() + 1);
+          slot.setUTCHours(17, 0, 0, 0);
+          while (slot.getUTCDay() === 0 || slot.getUTCDay() === 6) {
+            slot.setUTCDate(slot.getUTCDate() + 1);
+          }
+
+          const saturday = new Date(slot);
+          do {
+            saturday.setUTCDate(saturday.getUTCDate() + 1);
+          } while (saturday.getUTCDay() !== 6);
+
+          bru.setVar("trainerId", bru.interpolate("{{$randomUUID}}"));
+          bru.setVar("userId", bru.interpolate("{{$randomUUID}}"));
+          bru.setVar("slotStart", iso(slot));
+          bru.setVar("slotEnd", iso(new Date(slot.getTime() + minutes(30))));
+          bru.setVar("windowStart", iso(new Date(slot.getTime() - minutes(30))));
+          bru.setVar("windowEnd", iso(new Date(slot.getTime() + minutes(60))));
+          bru.setVar("weekendStart", iso(saturday));
+          bru.setVar("weekendEnd", iso(new Date(saturday.getTime() + minutes(30))));
+          bru.setVar("rangeEnd", iso(new Date(slot.getTime() + minutes(31 * 24 * 60))));
+        }
+
+docs: |-
+  Requests for the appointment scheduling API. Start the stack with
+  `docker compose up --build`, select the `local` environment, then run the
+  collection or send requests individually.
+
+  ## Generated variables
+
+  The collection script stores a random trainer, user, and a bookable slot on
+  the next weekday as runtime variables. It generates them the first time any
+  request is sent, and again on every **Book appointment** send. So:
+
+  - **Book appointment** always gets a 201 for a new trainer.
+  - **Book same slot**, **Get availability**, and **List appointments** follow
+    the most recent booking.
+
+  To view them, click **(...)** in the top-right corner and select
+  **Variables**.
+
+  ## Clearing variables
+
+  Runtime variables last until they are cleared or Bruno restarts. To clear
+  them, either:
+
+  1. Send the **Reset variables** request, which calls `bru.deleteAllVars()`.
+  2. Restart Bruno.
+
+  The next request sent after clearing generates a fresh set. The CLI starts
+  each `bru run` with no runtime variables, so it never needs clearing.

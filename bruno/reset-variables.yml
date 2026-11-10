@@ -1,0 +1,28 @@
+info:
+  name: Reset variables
+  type: http
+  seq: 99
+
+http:
+  method: GET
+  url: "{{baseUrl}}/healthz"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        // The collection script repopulates these on the next request sent.
+        bru.deleteAllVars();
+    - type: tests
+      code: |-
+        test("clears runtime variables", function () {
+          expect(bru.getVar("trainerId")).to.be.undefined;
+        });
+
+docs: |-
+  Clears all runtime variables so the next request starts a fresh scenario.
+  Calls `/healthz` only because Bruno needs a request to attach the script to.
+
+settings:
+  encodeUrl: true

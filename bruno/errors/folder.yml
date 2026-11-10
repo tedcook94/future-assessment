@@ -1,0 +1,6 @@
+info:
+  name: Errors
+  seq: 3
+
+docs: |-
+  Examples of rejected requests and their status codes.

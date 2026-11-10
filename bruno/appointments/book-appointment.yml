@@ -1,0 +1,39 @@
+info:
+  name: Book appointment
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/appointments"
+  body:
+    type: json
+    data: |-
+      {
+        "trainer_id": "{{trainerId}}",
+        "user_id": "{{userId}}",
+        "starts_at": "{{slotStart}}",
+        "ends_at": "{{slotEnd}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 201) {
+          bru.setVar("appointmentId", res.body.id);
+        }
+    - type: tests
+      code: |-
+        test("creates the appointment", function () {
+          expect(res.status).to.equal(201);
+          expect(res.body.id).to.be.a("string");
+          expect(res.body.trainer_id).to.equal(bru.getVar("trainerId"));
+          expect(res.body.user_id).to.equal(bru.getVar("userId"));
+          expect(res.body.starts_at).to.equal(bru.getVar("slotStart"));
+          expect(res.body.ends_at).to.equal(bru.getVar("slotEnd"));
+        });
+
+settings:
+  encodeUrl: true

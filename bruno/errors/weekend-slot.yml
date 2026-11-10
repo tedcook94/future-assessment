@@ -1,0 +1,30 @@
+info:
+  name: Weekend slot
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/appointments"
+  body:
+    type: json
+    data: |-
+      {
+        "trainer_id": "{{trainerId}}",
+        "user_id": "{{userId}}",
+        "starts_at": "{{weekendStart}}",
+        "ends_at": "{{weekendEnd}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("returns 422", function () {
+          expect(res.status).to.equal(422);
+          expect(res.body.error).to.include("Mon–Fri");
+        });
+
+settings:
+  encodeUrl: true

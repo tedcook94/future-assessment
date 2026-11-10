@@ -61,6 +61,7 @@ Mark each `[x]` when complete.
 ### Phase B: API and delivery
 
 - [x] 5. **HTTP handlers:** JSON encode/decode, consistent error shape, 400/409/422 mapping, `httptest` tests.
-- [ ] 6. **Seed:** load `appointments.json` on startup. Blocked until file arrives.
+- [ ] 6. **Seed:** load `appointments.json` on startup and add a seeded-trainer Bruno request. Blocked until file arrives.
 - [x] 7. **Docker:** Multi-stage build to distroless (`static-debian13:nonroot`, ~14 MB), app waits on Postgres healthcheck. No BuildKit cache mounts so legacy builders work. Seed (item 6) will use `go:embed`, so no Docker changes needed.
-- [ ] 8. **README:** Run instructions, `curl` examples, assumptions, future work.
+- [x] 8. **Bruno collection:** OpenCollection YAML requests with tests for the happy path, errors, and health. Usage in `docs/BRUNO.md`.
+- [ ] 9. **README:** Run instructions, `curl` examples, assumptions, future work.

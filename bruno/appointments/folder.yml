@@ -1,0 +1,7 @@
+info:
+  name: Appointments
+  seq: 2
+
+docs: |-
+  Happy path, meant to run in order: book a slot, show the overlap conflict,
+  then confirm the slot is gone from availability and listed for the trainer.

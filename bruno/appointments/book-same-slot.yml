@@ -1,0 +1,30 @@
+info:
+  name: Book same slot
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/appointments"
+  body:
+    type: json
+    data: |-
+      {
+        "trainer_id": "{{trainerId}}",
+        "user_id": "{{$randomUUID}}",
+        "starts_at": "{{slotStart}}",
+        "ends_at": "{{slotEnd}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("rejects the overlapping booking", function () {
+          expect(res.status).to.equal(409);
+          expect(res.body.error).to.be.a("string");
+        });
+
+settings:
+  encodeUrl: true
